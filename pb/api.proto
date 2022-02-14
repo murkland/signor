@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package signor;
+
+option go_package = "github.com/nbarena/signor/pb";
+
+message OfferRequest {
+  bytes session_id = 1;
+  string my_offer_sdp = 2;
+}
+message OfferResponse { string their_answer_sdp = 1; }
+
+message GetOfferRequest { bytes session_id = 1; }
+message GetOfferResponse { string their_offer_sdp = 2; }
+
+message AnswerRequest {
+  bytes session_id = 1;
+  string my_answer_sdp = 2;
+}
+message AnswerResponse {}
+
+service SessionService {
+  rpc Offer(OfferRequest) returns (OfferResponse);
+  rpc GetOffer(GetOfferRequest) returns (GetOfferResponse);
+  rpc Answer(AnswerRequest) returns (AnswerResponse);
+}
