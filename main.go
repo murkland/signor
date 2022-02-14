@@ -6,7 +6,10 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 
 	"github.com/nbarena/signor/pb"
 	"github.com/rs/cors"
@@ -102,6 +105,16 @@ func main() {
 		log.Fatalf("net.Listen(): %s", err)
 	}
 	log.Printf("listening on %s", lis.Addr())
+
+	sigChan := make(chan os.Signal)
+	signal.Notify(sigChan, syscall.SIGUSR1)
+	go func() {
+		for range sigChan {
+			s.sessionsMu.Lock()
+			log.Printf("active sessions: %d", len(s.sessions))
+			s.sessionsMu.Unlock()
+		}
+	}()
 
 	http.Serve(lis, cors.New(cors.Options{
 		AllowedMethods: []string{"POST"},
