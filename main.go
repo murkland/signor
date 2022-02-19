@@ -39,8 +39,7 @@ func (s *server) Offer(ctx context.Context, req *pb.OfferRequest) (*pb.OfferResp
 	if err := (func() error {
 		s.sessionsMu.Lock()
 		defer s.sessionsMu.Unlock()
-		_, ok := s.sessions[string(req.SessionId)]
-		if !ok {
+		if _, ok := s.sessions[string(req.SessionId)]; ok {
 			return twirp.AlreadyExists.Error("session already exists")
 		}
 
