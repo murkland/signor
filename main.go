@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/undernet/signor/pb"
+	"github.com/yumland/signor/pb"
 	"github.com/rs/cors"
 	"github.com/twitchtv/twirp"
 )

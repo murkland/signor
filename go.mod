@@ -1,4 +1,4 @@
-module github.com/undernet/signor
+module github.com/yumland/signor
 
 go 1.18
 
