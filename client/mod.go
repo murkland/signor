@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/nbarena/signor/pb"
+	"github.com/undernet/signor/pb"
 	"github.com/pion/webrtc/v3"
 )
 

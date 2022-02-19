@@ -1,4 +1,4 @@
-module github.com/nbarena/signor
+module github.com/undernet/signor
 
 go 1.18
 
