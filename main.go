@@ -11,9 +11,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/yumland/signor/pb"
 	"github.com/rs/cors"
 	"github.com/twitchtv/twirp"
+	"github.com/yumland/signor/pb"
 )
 
 var (
@@ -36,11 +36,19 @@ func (s *server) Offer(ctx context.Context, req *pb.OfferRequest) (*pb.OfferResp
 		answerSDPChan: make(chan string),
 	}
 
-	(func() {
+	if err := (func() error {
 		s.sessionsMu.Lock()
 		defer s.sessionsMu.Unlock()
+		_, ok := s.sessions[string(req.SessionId)]
+		if !ok {
+			return twirp.AlreadyExists.Error("session already exists")
+		}
+
 		s.sessions[string(req.SessionId)] = sess
-	})()
+		return nil
+	})(); err != nil {
+		return nil, err
+	}
 
 	defer (func() {
 		s.sessionsMu.Lock()
