@@ -13,7 +13,7 @@ import (
 
 	"github.com/rs/cors"
 	"github.com/twitchtv/twirp"
-	"github.com/yumland/signor/pb"
+	"github.com/murkland/signor/pb"
 )
 
 var (
