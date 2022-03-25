@@ -20,17 +20,19 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type OfferRequest struct {
+type NegotiateRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SessionId  []byte `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	MyOfferSdp string `protobuf:"bytes,2,opt,name=my_offer_sdp,json=myOfferSdp,proto3" json:"my_offer_sdp,omitempty"`
+	// Types that are assignable to Which:
+	//	*NegotiateRequest_Start_
+	//	*NegotiateRequest_Answer_
+	Which isNegotiateRequest_Which `protobuf_oneof:"which"`
 }
 
-func (x *OfferRequest) Reset() {
-	*x = OfferRequest{}
+func (x *NegotiateRequest) Reset() {
+	*x = NegotiateRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -38,13 +40,13 @@ func (x *OfferRequest) Reset() {
 	}
 }
 
-func (x *OfferRequest) String() string {
+func (x *NegotiateRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OfferRequest) ProtoMessage() {}
+func (*NegotiateRequest) ProtoMessage() {}
 
-func (x *OfferRequest) ProtoReflect() protoreflect.Message {
+func (x *NegotiateRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -56,35 +58,61 @@ func (x *OfferRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OfferRequest.ProtoReflect.Descriptor instead.
-func (*OfferRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use NegotiateRequest.ProtoReflect.Descriptor instead.
+func (*NegotiateRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *OfferRequest) GetSessionId() []byte {
-	if x != nil {
-		return x.SessionId
+func (m *NegotiateRequest) GetWhich() isNegotiateRequest_Which {
+	if m != nil {
+		return m.Which
 	}
 	return nil
 }
 
-func (x *OfferRequest) GetMyOfferSdp() string {
-	if x != nil {
-		return x.MyOfferSdp
+func (x *NegotiateRequest) GetStart() *NegotiateRequest_Start {
+	if x, ok := x.GetWhich().(*NegotiateRequest_Start_); ok {
+		return x.Start
 	}
-	return ""
+	return nil
 }
 
-type OfferResponse struct {
+func (x *NegotiateRequest) GetAnswer() *NegotiateRequest_Answer {
+	if x, ok := x.GetWhich().(*NegotiateRequest_Answer_); ok {
+		return x.Answer
+	}
+	return nil
+}
+
+type isNegotiateRequest_Which interface {
+	isNegotiateRequest_Which()
+}
+
+type NegotiateRequest_Start_ struct {
+	Start *NegotiateRequest_Start `protobuf:"bytes,1,opt,name=start,proto3,oneof"`
+}
+
+type NegotiateRequest_Answer_ struct {
+	Answer *NegotiateRequest_Answer `protobuf:"bytes,2,opt,name=answer,proto3,oneof"`
+}
+
+func (*NegotiateRequest_Start_) isNegotiateRequest_Which() {}
+
+func (*NegotiateRequest_Answer_) isNegotiateRequest_Which() {}
+
+type NegotiateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TheirAnswerSdp string `protobuf:"bytes,1,opt,name=their_answer_sdp,json=theirAnswerSdp,proto3" json:"their_answer_sdp,omitempty"`
+	// Types that are assignable to Which:
+	//	*NegotiateResponse_Offer_
+	//	*NegotiateResponse_Answer_
+	Which isNegotiateResponse_Which `protobuf_oneof:"which"`
 }
 
-func (x *OfferResponse) Reset() {
-	*x = OfferResponse{}
+func (x *NegotiateResponse) Reset() {
+	*x = NegotiateResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -92,13 +120,13 @@ func (x *OfferResponse) Reset() {
 	}
 }
 
-func (x *OfferResponse) String() string {
+func (x *NegotiateResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*OfferResponse) ProtoMessage() {}
+func (*NegotiateResponse) ProtoMessage() {}
 
-func (x *OfferResponse) ProtoReflect() protoreflect.Message {
+func (x *NegotiateResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -110,28 +138,59 @@ func (x *OfferResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use OfferResponse.ProtoReflect.Descriptor instead.
-func (*OfferResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use NegotiateResponse.ProtoReflect.Descriptor instead.
+func (*NegotiateResponse) Descriptor() ([]byte, []int) {
 	return file_api_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *OfferResponse) GetTheirAnswerSdp() string {
-	if x != nil {
-		return x.TheirAnswerSdp
+func (m *NegotiateResponse) GetWhich() isNegotiateResponse_Which {
+	if m != nil {
+		return m.Which
 	}
-	return ""
+	return nil
 }
 
-type GetOfferRequest struct {
+func (x *NegotiateResponse) GetOffer() *NegotiateResponse_Offer {
+	if x, ok := x.GetWhich().(*NegotiateResponse_Offer_); ok {
+		return x.Offer
+	}
+	return nil
+}
+
+func (x *NegotiateResponse) GetAnswer() *NegotiateResponse_Answer {
+	if x, ok := x.GetWhich().(*NegotiateResponse_Answer_); ok {
+		return x.Answer
+	}
+	return nil
+}
+
+type isNegotiateResponse_Which interface {
+	isNegotiateResponse_Which()
+}
+
+type NegotiateResponse_Offer_ struct {
+	Offer *NegotiateResponse_Offer `protobuf:"bytes,1,opt,name=offer,proto3,oneof"`
+}
+
+type NegotiateResponse_Answer_ struct {
+	Answer *NegotiateResponse_Answer `protobuf:"bytes,2,opt,name=answer,proto3,oneof"`
+}
+
+func (*NegotiateResponse_Offer_) isNegotiateResponse_Which() {}
+
+func (*NegotiateResponse_Answer_) isNegotiateResponse_Which() {}
+
+type NegotiateRequest_Start struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SessionId []byte `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	SessionId string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	OfferSdp  string `protobuf:"bytes,2,opt,name=offer_sdp,json=offerSdp,proto3" json:"offer_sdp,omitempty"`
 }
 
-func (x *GetOfferRequest) Reset() {
-	*x = GetOfferRequest{}
+func (x *NegotiateRequest_Start) Reset() {
+	*x = NegotiateRequest_Start{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -139,13 +198,13 @@ func (x *GetOfferRequest) Reset() {
 	}
 }
 
-func (x *GetOfferRequest) String() string {
+func (x *NegotiateRequest_Start) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetOfferRequest) ProtoMessage() {}
+func (*NegotiateRequest_Start) ProtoMessage() {}
 
-func (x *GetOfferRequest) ProtoReflect() protoreflect.Message {
+func (x *NegotiateRequest_Start) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -157,28 +216,35 @@ func (x *GetOfferRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetOfferRequest.ProtoReflect.Descriptor instead.
-func (*GetOfferRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{2}
+// Deprecated: Use NegotiateRequest_Start.ProtoReflect.Descriptor instead.
+func (*NegotiateRequest_Start) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *GetOfferRequest) GetSessionId() []byte {
+func (x *NegotiateRequest_Start) GetSessionId() string {
 	if x != nil {
 		return x.SessionId
 	}
-	return nil
+	return ""
 }
 
-type GetOfferResponse struct {
+func (x *NegotiateRequest_Start) GetOfferSdp() string {
+	if x != nil {
+		return x.OfferSdp
+	}
+	return ""
+}
+
+type NegotiateRequest_Answer struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TheirOfferSdp string `protobuf:"bytes,2,opt,name=their_offer_sdp,json=theirOfferSdp,proto3" json:"their_offer_sdp,omitempty"`
+	Sdp string `protobuf:"bytes,1,opt,name=sdp,proto3" json:"sdp,omitempty"`
 }
 
-func (x *GetOfferResponse) Reset() {
-	*x = GetOfferResponse{}
+func (x *NegotiateRequest_Answer) Reset() {
+	*x = NegotiateRequest_Answer{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -186,13 +252,13 @@ func (x *GetOfferResponse) Reset() {
 	}
 }
 
-func (x *GetOfferResponse) String() string {
+func (x *NegotiateRequest_Answer) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetOfferResponse) ProtoMessage() {}
+func (*NegotiateRequest_Answer) ProtoMessage() {}
 
-func (x *GetOfferResponse) ProtoReflect() protoreflect.Message {
+func (x *NegotiateRequest_Answer) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -204,29 +270,28 @@ func (x *GetOfferResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetOfferResponse.ProtoReflect.Descriptor instead.
-func (*GetOfferResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{3}
+// Deprecated: Use NegotiateRequest_Answer.ProtoReflect.Descriptor instead.
+func (*NegotiateRequest_Answer) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{0, 1}
 }
 
-func (x *GetOfferResponse) GetTheirOfferSdp() string {
+func (x *NegotiateRequest_Answer) GetSdp() string {
 	if x != nil {
-		return x.TheirOfferSdp
+		return x.Sdp
 	}
 	return ""
 }
 
-type AnswerRequest struct {
+type NegotiateResponse_Offer struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SessionId   []byte `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	MyAnswerSdp string `protobuf:"bytes,2,opt,name=my_answer_sdp,json=myAnswerSdp,proto3" json:"my_answer_sdp,omitempty"`
+	Sdp string `protobuf:"bytes,1,opt,name=sdp,proto3" json:"sdp,omitempty"`
 }
 
-func (x *AnswerRequest) Reset() {
-	*x = AnswerRequest{}
+func (x *NegotiateResponse_Offer) Reset() {
+	*x = NegotiateResponse_Offer{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -234,13 +299,13 @@ func (x *AnswerRequest) Reset() {
 	}
 }
 
-func (x *AnswerRequest) String() string {
+func (x *NegotiateResponse_Offer) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AnswerRequest) ProtoMessage() {}
+func (*NegotiateResponse_Offer) ProtoMessage() {}
 
-func (x *AnswerRequest) ProtoReflect() protoreflect.Message {
+func (x *NegotiateResponse_Offer) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -252,33 +317,28 @@ func (x *AnswerRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AnswerRequest.ProtoReflect.Descriptor instead.
-func (*AnswerRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{4}
+// Deprecated: Use NegotiateResponse_Offer.ProtoReflect.Descriptor instead.
+func (*NegotiateResponse_Offer) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{1, 0}
 }
 
-func (x *AnswerRequest) GetSessionId() []byte {
+func (x *NegotiateResponse_Offer) GetSdp() string {
 	if x != nil {
-		return x.SessionId
-	}
-	return nil
-}
-
-func (x *AnswerRequest) GetMyAnswerSdp() string {
-	if x != nil {
-		return x.MyAnswerSdp
+		return x.Sdp
 	}
 	return ""
 }
 
-type AnswerResponse struct {
+type NegotiateResponse_Answer struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
+
+	Sdp string `protobuf:"bytes,1,opt,name=sdp,proto3" json:"sdp,omitempty"`
 }
 
-func (x *AnswerResponse) Reset() {
-	*x = AnswerResponse{}
+func (x *NegotiateResponse_Answer) Reset() {
+	*x = NegotiateResponse_Answer{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_api_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -286,13 +346,13 @@ func (x *AnswerResponse) Reset() {
 	}
 }
 
-func (x *AnswerResponse) String() string {
+func (x *NegotiateResponse_Answer) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*AnswerResponse) ProtoMessage() {}
+func (*NegotiateResponse_Answer) ProtoMessage() {}
 
-func (x *AnswerResponse) ProtoReflect() protoreflect.Message {
+func (x *NegotiateResponse_Answer) ProtoReflect() protoreflect.Message {
 	mi := &file_api_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -304,52 +364,58 @@ func (x *AnswerResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AnswerResponse.ProtoReflect.Descriptor instead.
-func (*AnswerResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_rawDescGZIP(), []int{5}
+// Deprecated: Use NegotiateResponse_Answer.ProtoReflect.Descriptor instead.
+func (*NegotiateResponse_Answer) Descriptor() ([]byte, []int) {
+	return file_api_proto_rawDescGZIP(), []int{1, 1}
+}
+
+func (x *NegotiateResponse_Answer) GetSdp() string {
+	if x != nil {
+		return x.Sdp
+	}
+	return ""
 }
 
 var File_api_proto protoreflect.FileDescriptor
 
 var file_api_proto_rawDesc = []byte{
 	0x0a, 0x09, 0x61, 0x70, 0x69, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x06, 0x73, 0x69, 0x67,
-	0x6e, 0x6f, 0x72, 0x22, 0x4f, 0x0a, 0x0c, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x69,
-	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x09, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
-	0x49, 0x64, 0x12, 0x20, 0x0a, 0x0c, 0x6d, 0x79, 0x5f, 0x6f, 0x66, 0x66, 0x65, 0x72, 0x5f, 0x73,
-	0x64, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x6d, 0x79, 0x4f, 0x66, 0x66, 0x65,
-	0x72, 0x53, 0x64, 0x70, 0x22, 0x39, 0x0a, 0x0d, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x28, 0x0a, 0x10, 0x74, 0x68, 0x65, 0x69, 0x72, 0x5f, 0x61,
-	0x6e, 0x73, 0x77, 0x65, 0x72, 0x5f, 0x73, 0x64, 0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x0e, 0x74, 0x68, 0x65, 0x69, 0x72, 0x41, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x53, 0x64, 0x70, 0x22,
-	0x30, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x09, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x49,
-	0x64, 0x22, 0x3a, 0x0a, 0x10, 0x47, 0x65, 0x74, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x26, 0x0a, 0x0f, 0x74, 0x68, 0x65, 0x69, 0x72, 0x5f, 0x6f,
-	0x66, 0x66, 0x65, 0x72, 0x5f, 0x73, 0x64, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d,
-	0x74, 0x68, 0x65, 0x69, 0x72, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x53, 0x64, 0x70, 0x22, 0x52, 0x0a,
-	0x0d, 0x41, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d,
-	0x0a, 0x0a, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0c, 0x52, 0x09, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x12, 0x22, 0x0a,
-	0x0d, 0x6d, 0x79, 0x5f, 0x61, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x5f, 0x73, 0x64, 0x70, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x6d, 0x79, 0x41, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x53, 0x64,
-	0x70, 0x22, 0x10, 0x0a, 0x0e, 0x41, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x32, 0xbe, 0x01, 0x0a, 0x0e, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x53,
-	0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x34, 0x0a, 0x05, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x12,
-	0x14, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2e, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x15, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2e, 0x4f,
-	0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x3d, 0x0a, 0x08,
-	0x47, 0x65, 0x74, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x12, 0x17, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f,
-	0x72, 0x2e, 0x47, 0x65, 0x74, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x18, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2e, 0x47, 0x65, 0x74, 0x4f, 0x66,
-	0x66, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x37, 0x0a, 0x06, 0x41,
-	0x6e, 0x73, 0x77, 0x65, 0x72, 0x12, 0x15, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2e, 0x41,
-	0x6e, 0x73, 0x77, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x73,
-	0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2e, 0x41, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x42, 0x1e, 0x5a, 0x1c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x6e, 0x62, 0x61, 0x72, 0x65, 0x6e, 0x61, 0x2f, 0x73, 0x69, 0x67, 0x6e, 0x6f,
-	0x72, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6e, 0x6f, 0x72, 0x22, 0xef, 0x01, 0x0a, 0x10, 0x4e, 0x65, 0x67, 0x6f, 0x74, 0x69, 0x61, 0x74,
+	0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x36, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x72,
+	0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f, 0x72,
+	0x2e, 0x4e, 0x65, 0x67, 0x6f, 0x74, 0x69, 0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x2e, 0x53, 0x74, 0x61, 0x72, 0x74, 0x48, 0x00, 0x52, 0x05, 0x73, 0x74, 0x61, 0x72, 0x74,
+	0x12, 0x39, 0x0a, 0x06, 0x61, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x1f, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2e, 0x4e, 0x65, 0x67, 0x6f, 0x74, 0x69,
+	0x61, 0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x2e, 0x41, 0x6e, 0x73, 0x77, 0x65,
+	0x72, 0x48, 0x00, 0x52, 0x06, 0x61, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x1a, 0x43, 0x0a, 0x05, 0x53,
+	0x74, 0x61, 0x72, 0x74, 0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x5f,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f,
+	0x6e, 0x49, 0x64, 0x12, 0x1b, 0x0a, 0x09, 0x6f, 0x66, 0x66, 0x65, 0x72, 0x5f, 0x73, 0x64, 0x70,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x6f, 0x66, 0x66, 0x65, 0x72, 0x53, 0x64, 0x70,
+	0x1a, 0x1a, 0x0a, 0x06, 0x41, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x64,
+	0x70, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x73, 0x64, 0x70, 0x42, 0x07, 0x0a, 0x05,
+	0x77, 0x68, 0x69, 0x63, 0x68, 0x22, 0xc8, 0x01, 0x0a, 0x11, 0x4e, 0x65, 0x67, 0x6f, 0x74, 0x69,
+	0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x37, 0x0a, 0x05, 0x6f,
+	0x66, 0x66, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x73, 0x69, 0x67,
+	0x6e, 0x6f, 0x72, 0x2e, 0x4e, 0x65, 0x67, 0x6f, 0x74, 0x69, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x48, 0x00, 0x52, 0x05, 0x6f,
+	0x66, 0x66, 0x65, 0x72, 0x12, 0x3a, 0x0a, 0x06, 0x61, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2e, 0x4e, 0x65,
+	0x67, 0x6f, 0x74, 0x69, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2e,
+	0x41, 0x6e, 0x73, 0x77, 0x65, 0x72, 0x48, 0x00, 0x52, 0x06, 0x61, 0x6e, 0x73, 0x77, 0x65, 0x72,
+	0x1a, 0x19, 0x0a, 0x05, 0x4f, 0x66, 0x66, 0x65, 0x72, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x64, 0x70,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x73, 0x64, 0x70, 0x1a, 0x1a, 0x0a, 0x06, 0x41,
+	0x6e, 0x73, 0x77, 0x65, 0x72, 0x12, 0x10, 0x0a, 0x03, 0x73, 0x64, 0x70, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x03, 0x73, 0x64, 0x70, 0x42, 0x07, 0x0a, 0x05, 0x77, 0x68, 0x69, 0x63, 0x68,
+	0x32, 0x56, 0x0a, 0x0e, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x72, 0x76, 0x69,
+	0x63, 0x65, 0x12, 0x44, 0x0a, 0x09, 0x4e, 0x65, 0x67, 0x6f, 0x74, 0x69, 0x61, 0x74, 0x65, 0x12,
+	0x18, 0x2e, 0x73, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2e, 0x4e, 0x65, 0x67, 0x6f, 0x74, 0x69, 0x61,
+	0x74, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x19, 0x2e, 0x73, 0x69, 0x67, 0x6e,
+	0x6f, 0x72, 0x2e, 0x4e, 0x65, 0x67, 0x6f, 0x74, 0x69, 0x61, 0x74, 0x65, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x28, 0x01, 0x30, 0x01, 0x42, 0x1e, 0x5a, 0x1c, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6e, 0x62, 0x61, 0x72, 0x65, 0x6e, 0x61, 0x2f, 0x73,
+	0x69, 0x67, 0x6e, 0x6f, 0x72, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -366,25 +432,25 @@ func file_api_proto_rawDescGZIP() []byte {
 
 var file_api_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_api_proto_goTypes = []interface{}{
-	(*OfferRequest)(nil),     // 0: signor.OfferRequest
-	(*OfferResponse)(nil),    // 1: signor.OfferResponse
-	(*GetOfferRequest)(nil),  // 2: signor.GetOfferRequest
-	(*GetOfferResponse)(nil), // 3: signor.GetOfferResponse
-	(*AnswerRequest)(nil),    // 4: signor.AnswerRequest
-	(*AnswerResponse)(nil),   // 5: signor.AnswerResponse
+	(*NegotiateRequest)(nil),         // 0: signor.NegotiateRequest
+	(*NegotiateResponse)(nil),        // 1: signor.NegotiateResponse
+	(*NegotiateRequest_Start)(nil),   // 2: signor.NegotiateRequest.Start
+	(*NegotiateRequest_Answer)(nil),  // 3: signor.NegotiateRequest.Answer
+	(*NegotiateResponse_Offer)(nil),  // 4: signor.NegotiateResponse.Offer
+	(*NegotiateResponse_Answer)(nil), // 5: signor.NegotiateResponse.Answer
 }
 var file_api_proto_depIdxs = []int32{
-	0, // 0: signor.SessionService.Offer:input_type -> signor.OfferRequest
-	2, // 1: signor.SessionService.GetOffer:input_type -> signor.GetOfferRequest
-	4, // 2: signor.SessionService.Answer:input_type -> signor.AnswerRequest
-	1, // 3: signor.SessionService.Offer:output_type -> signor.OfferResponse
-	3, // 4: signor.SessionService.GetOffer:output_type -> signor.GetOfferResponse
-	5, // 5: signor.SessionService.Answer:output_type -> signor.AnswerResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: signor.NegotiateRequest.start:type_name -> signor.NegotiateRequest.Start
+	3, // 1: signor.NegotiateRequest.answer:type_name -> signor.NegotiateRequest.Answer
+	4, // 2: signor.NegotiateResponse.offer:type_name -> signor.NegotiateResponse.Offer
+	5, // 3: signor.NegotiateResponse.answer:type_name -> signor.NegotiateResponse.Answer
+	0, // 4: signor.SessionService.Negotiate:input_type -> signor.NegotiateRequest
+	1, // 5: signor.SessionService.Negotiate:output_type -> signor.NegotiateResponse
+	5, // [5:6] is the sub-list for method output_type
+	4, // [4:5] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_init() }
@@ -394,7 +460,7 @@ func file_api_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_api_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OfferRequest); i {
+			switch v := v.(*NegotiateRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -406,7 +472,7 @@ func file_api_proto_init() {
 			}
 		}
 		file_api_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OfferResponse); i {
+			switch v := v.(*NegotiateResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -418,7 +484,7 @@ func file_api_proto_init() {
 			}
 		}
 		file_api_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetOfferRequest); i {
+			switch v := v.(*NegotiateRequest_Start); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -430,7 +496,7 @@ func file_api_proto_init() {
 			}
 		}
 		file_api_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*GetOfferResponse); i {
+			switch v := v.(*NegotiateRequest_Answer); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -442,7 +508,7 @@ func file_api_proto_init() {
 			}
 		}
 		file_api_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AnswerRequest); i {
+			switch v := v.(*NegotiateResponse_Offer); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -454,7 +520,7 @@ func file_api_proto_init() {
 			}
 		}
 		file_api_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*AnswerResponse); i {
+			switch v := v.(*NegotiateResponse_Answer); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -465,6 +531,14 @@ func file_api_proto_init() {
 				return nil
 			}
 		}
+	}
+	file_api_proto_msgTypes[0].OneofWrappers = []interface{}{
+		(*NegotiateRequest_Start_)(nil),
+		(*NegotiateRequest_Answer_)(nil),
+	}
+	file_api_proto_msgTypes[1].OneofWrappers = []interface{}{
+		(*NegotiateResponse_Offer_)(nil),
+		(*NegotiateResponse_Answer_)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

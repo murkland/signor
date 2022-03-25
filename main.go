@@ -1,19 +1,20 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"flag"
+	"io"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
-	"github.com/rs/cors"
-	"github.com/twitchtv/twirp"
 	"github.com/murkland/signor/pb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 var (
@@ -21,83 +22,91 @@ var (
 )
 
 type session struct {
+	id            string
+	refcount      int32
 	offerSDP      string
 	answerSDPChan chan string
 }
 
 type server struct {
+	pb.UnimplementedSessionServiceServer
+
 	sessions   map[string]*session
 	sessionsMu sync.Mutex
 }
 
-func (s *server) Offer(ctx context.Context, req *pb.OfferRequest) (*pb.OfferResponse, error) {
-	sess := &session{
-		offerSDP:      req.MyOfferSdp,
-		answerSDPChan: make(chan string),
-	}
+func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
+	var sess *session
 
-	if err := (func() error {
-		s.sessionsMu.Lock()
-		defer s.sessionsMu.Unlock()
-		if _, ok := s.sessions[string(req.SessionId)]; ok {
-			return twirp.AlreadyExists.Error("session already exists")
+	defer func() {
+		if sess == nil {
+			return
 		}
 
-		s.sessions[string(req.SessionId)] = sess
-		return nil
-	})(); err != nil {
-		return nil, err
-	}
-
-	defer (func() {
 		s.sessionsMu.Lock()
 		defer s.sessionsMu.Unlock()
-		delete(s.sessions, string(req.SessionId))
-	})()
+		if atomic.AddInt32(&sess.refcount, -1) <= 0 {
+			delete(s.sessions, sess.id)
+		}
+	}()
+	for {
+		in, err := stream.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			return err
+		}
 
-	var answerSDP string
-	select {
-	case answerSDP = <-sess.answerSDPChan:
-	case <-ctx.Done():
-		return nil, ctx.Err()
+		switch p := in.Which.(type) {
+		case *pb.NegotiateRequest_Start_:
+			func() {
+				s.sessionsMu.Lock()
+				defer s.sessionsMu.Unlock()
+				sess = s.sessions[p.Start.SessionId]
+				if sess == nil {
+					sess = &session{id: p.Start.SessionId, refcount: 0, answerSDPChan: make(chan string)}
+					s.sessions[sess.id] = sess
+				}
+			}()
+			atomic.AddInt32(&sess.refcount, 1)
+
+			if sess.offerSDP != "" {
+				stream.Send(&pb.NegotiateResponse{
+					Which: &pb.NegotiateResponse_Offer_{
+						Offer: &pb.NegotiateResponse_Offer{
+							Sdp: sess.offerSDP,
+						},
+					},
+				})
+			} else {
+				sess.offerSDP = p.Start.OfferSdp
+				select {
+				case answerSDP := <-sess.answerSDPChan:
+					stream.Send(&pb.NegotiateResponse{
+						Which: &pb.NegotiateResponse_Answer_{
+							Answer: &pb.NegotiateResponse_Answer{
+								Sdp: answerSDP,
+							},
+						},
+					})
+					return nil
+				case <-stream.Context().Done():
+					return stream.Context().Err()
+				}
+			}
+		case *pb.NegotiateRequest_Answer_:
+			if sess == nil {
+				return grpc.Errorf(codes.FailedPrecondition, "did not receive start packet")
+			}
+			select {
+			case sess.answerSDPChan <- p.Answer.Sdp:
+			case <-stream.Context().Done():
+				return stream.Context().Err()
+			}
+			return nil
+		}
 	}
-
-	return &pb.OfferResponse{
-		TheirAnswerSdp: answerSDP,
-	}, nil
-}
-
-func (s *server) GetOffer(ctx context.Context, req *pb.GetOfferRequest) (*pb.GetOfferResponse, error) {
-	s.sessionsMu.Lock()
-	defer s.sessionsMu.Unlock()
-
-	sess := s.sessions[string(req.SessionId)]
-	if sess == nil {
-		return nil, twirp.NotFound.Error("no such session")
-	}
-
-	return &pb.GetOfferResponse{
-		TheirOfferSdp: sess.offerSDP,
-	}, nil
-}
-
-func (s *server) Answer(ctx context.Context, req *pb.AnswerRequest) (*pb.AnswerResponse, error) {
-	s.sessionsMu.Lock()
-	defer s.sessionsMu.Unlock()
-
-	sess := s.sessions[string(req.SessionId)]
-	if sess == nil {
-		return nil, twirp.NotFound.Error("no such session")
-	}
-
-	select {
-	case sess.answerSDPChan <- req.MyAnswerSdp:
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-
-	delete(s.sessions, string(req.SessionId))
-	return &pb.AnswerResponse{}, nil
 }
 
 func main() {
@@ -123,8 +132,10 @@ func main() {
 		}
 	}()
 
-	http.Serve(lis, cors.New(cors.Options{
-		AllowedMethods: []string{"POST"},
-		AllowedHeaders: []string{"Content-Type", "Twirp-Version"},
-	}).Handler(pb.NewSessionServiceServer(s)))
+	grpcServer := grpc.NewServer()
+	pb.RegisterSessionServiceServer(grpcServer, s)
+
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }
