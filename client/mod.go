@@ -43,7 +43,6 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 	if err = peerConn.SetLocalDescription(offer); err != nil {
 		return nil, ConnectionSideUnknown, err
 	}
-
 	select {
 	case <-ctx.Done():
 		return nil, ConnectionSideUnknown, ctx.Err()
@@ -84,6 +83,7 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 			return nil, ConnectionSideUnknown, err
 		}
 
+		gatherComplete := webrtc.GatheringCompletePromise(peerConn)
 		answer, err := peerConn.CreateAnswer(nil)
 		if err != nil {
 			return nil, ConnectionSideUnknown, err
@@ -91,6 +91,12 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 		if err := peerConn.SetLocalDescription(answer); err != nil {
 			return nil, ConnectionSideUnknown, err
 		}
+		select {
+		case <-ctx.Done():
+			return nil, ConnectionSideUnknown, ctx.Err()
+		case <-gatherComplete:
+		}
+
 		if err := negotiation.Send(&pb.NegotiateRequest{
 			Which: &pb.NegotiateRequest_Answer_{
 				Answer: &pb.NegotiateRequest_Answer{
