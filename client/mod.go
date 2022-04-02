@@ -106,7 +106,7 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 		}
 		side = ConnectionSideOfferer
 	default:
-		return nil, ConnectionSideUnknown, fmt.Errorf("unexpected packet: %v", p)
+		return nil, ConnectionSideUnknown, fmt.Errorf("unexpected packet: %s", p)
 	}
 
 	allCandidatesSent := make(chan struct{})

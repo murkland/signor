@@ -24,10 +24,9 @@ type session struct {
 	refcount   int
 	refcountMu sync.Mutex
 
-	id               string
-	offerSDP         string
-	answerSDPChan    chan string
-	iceCandidateChan chan string
+	id       string
+	offerSDP string
+	streams  [2]pb.SessionService_NegotiateServer
 }
 
 type server struct {
@@ -39,6 +38,7 @@ type server struct {
 
 func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 	var sess *session
+	var me int
 
 	defer func() {
 		if sess == nil {
@@ -72,28 +72,10 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 				defer s.sessionsMu.Unlock()
 				sess = s.sessions[p.Start.SessionId]
 				if sess == nil {
-					iceCandidateChan := make(chan string)
-					go func() {
-						for {
-							select {
-							case <-stream.Context().Done():
-								break
-							case iceCandidate := <-iceCandidateChan:
-								stream.Send(&pb.NegotiateResponse{
-									Which: &pb.NegotiateResponse_IceCandidate{
-										IceCandidate: &pb.NegotiateResponse_ICECandidate{
-											IceCandidate: iceCandidate,
-										},
-									},
-								})
-							}
-						}
-					}()
 					sess = &session{
-						id:               p.Start.SessionId,
-						refcount:         0,
-						answerSDPChan:    make(chan string),
-						iceCandidateChan: iceCandidateChan,
+						id:       p.Start.SessionId,
+						offerSDP: p.Start.OfferSdp,
+						refcount: 0,
 					}
 					s.sessions[sess.id] = sess
 				}
@@ -105,52 +87,63 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 				if sess.refcount >= 2 {
 					return grpc.Errorf(codes.FailedPrecondition, "too many clients on this session")
 				}
+				me = sess.refcount
 				sess.refcount++
 				return nil
 			}(); err != nil {
 				return err
 			}
 
-			if sess.offerSDP != "" {
-				stream.Send(&pb.NegotiateResponse{
+			sess.streams[me] = stream
+
+			// This is the polite peer.
+			if me == 1 {
+				if err := stream.Send(&pb.NegotiateResponse{
 					Which: &pb.NegotiateResponse_Offer_{
 						Offer: &pb.NegotiateResponse_Offer{
 							Sdp: sess.offerSDP,
 						},
 					},
-				})
-			} else {
-				sess.offerSDP = p.Start.OfferSdp
-				select {
-				case answerSDP := <-sess.answerSDPChan:
-					stream.Send(&pb.NegotiateResponse{
-						Which: &pb.NegotiateResponse_Answer_{
-							Answer: &pb.NegotiateResponse_Answer{
-								Sdp: answerSDP,
-							},
-						},
-					})
-				case <-stream.Context().Done():
-					return stream.Context().Err()
+				}); err != nil {
+					return err
 				}
 			}
 		case *pb.NegotiateRequest_Answer_:
 			if sess == nil {
 				return grpc.Errorf(codes.FailedPrecondition, "did not receive start packet")
 			}
-			select {
-			case sess.answerSDPChan <- p.Answer.Sdp:
-			case <-stream.Context().Done():
-				return stream.Context().Err()
+
+			if me != 1 {
+				return grpc.Errorf(codes.FailedPrecondition, "only the impolite peer may answer")
+			}
+
+			if err := sess.streams[0].Send(&pb.NegotiateResponse{
+				Which: &pb.NegotiateResponse_Answer_{
+					Answer: &pb.NegotiateResponse_Answer{
+						Sdp: p.Answer.Sdp,
+					},
+				},
+			}); err != nil {
+				return err
 			}
 		case *pb.NegotiateRequest_IceCandidate:
 			if sess == nil {
 				return grpc.Errorf(codes.FailedPrecondition, "did not receive start packet")
 			}
-			select {
-			case sess.iceCandidateChan <- p.IceCandidate.IceCandidate:
-			case <-stream.Context().Done():
-				return stream.Context().Err()
+
+			peerStream := sess.streams[1-me]
+			if peerStream == nil {
+				return grpc.Errorf(codes.FailedPrecondition, "no peer stream")
+			}
+
+			if err := peerStream.Send(&pb.NegotiateResponse{
+				Which: &pb.NegotiateResponse_IceCandidate{
+					IceCandidate: &pb.NegotiateResponse_ICECandidate{
+						IceCandidate: p.IceCandidate.IceCandidate,
+					},
+				},
+			}); err != nil {
+				return err
 			}
 		}
 	}
