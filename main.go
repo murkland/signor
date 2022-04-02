@@ -130,7 +130,6 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 							},
 						},
 					})
-					return nil
 				case <-stream.Context().Done():
 					return stream.Context().Err()
 				}

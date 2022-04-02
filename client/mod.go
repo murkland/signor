@@ -72,7 +72,7 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 	case *pb.NegotiateResponse_Offer_:
 		// We are polite, we need to rollback.
 		// TODO: Just set the local description to rollback when it's supported.
-		peerConn, err := makePeerConn()
+		peerConn, err = makePeerConn()
 		if err != nil {
 			return nil, ConnectionSideUnknown, err
 		}
@@ -109,31 +109,56 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 		return nil, ConnectionSideUnknown, fmt.Errorf("unexpected packet: %v", p)
 	}
 
+	allCandidatesSent := make(chan struct{})
+	allCandidatesReceived := make(chan struct{})
+
 	go func() {
 		for {
 			resp, err := negotiation.Recv()
 			if err != nil {
-				log.Printf("error received during negotiation: %s", err)
+				log.Printf("signor: error received during negotiation: %s", err)
 				break
 			}
 
 			iceCandidateResp, ok := resp.Which.(*pb.NegotiateResponse_IceCandidate)
 			if !ok {
-				log.Printf("received unexpected response from server: %s", resp)
+				log.Printf("signor: received unexpected response from server: %s", resp)
 				continue
+			}
+
+			if iceCandidateResp.IceCandidate.IceCandidate == "" {
+				log.Printf("signor: all ICE candidates received from peer")
+				close(allCandidatesReceived)
+				return
 			}
 
 			var iceCandidateInit webrtc.ICECandidateInit
 			if err := json.Unmarshal([]byte(iceCandidateResp.IceCandidate.IceCandidate), &iceCandidateInit); err != nil {
-				log.Printf("failed to unmarshal ice candidate: %s", err)
+				log.Printf("signor: failed to unmarshal ICE candidate: %s", err)
 				continue
 			}
 
+			log.Printf("signor: received ICE candidate from peer: %s", iceCandidateResp.IceCandidate.IceCandidate)
+
 			if err := peerConn.AddICECandidate(iceCandidateInit); err != nil {
-				log.Printf("failed to add ice candidate: %s", err)
+				log.Printf("signor: failed to add ICE candidate: %s", err)
 				continue
 			}
 		}
+	}()
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			return
+		case <-allCandidatesSent:
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-allCandidatesReceived:
+		}
+		negotiation.CloseSend()
 	}()
 
 	peerConn.OnConnectionStateChange(func(pcs webrtc.PeerConnectionState) {
@@ -143,20 +168,31 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 	})
 
 	peerConn.OnICECandidate(func(iceCandidate *webrtc.ICECandidate) {
-		iceCandidateStr, err := json.Marshal(iceCandidate.ToJSON())
-		if err != nil {
-			log.Printf("failed to marshal ice candidate: %s", err)
-			return
+		var marshaledICECandidate []byte
+		if iceCandidate != nil {
+			var err error
+			marshaledICECandidate, err = json.Marshal(iceCandidate.ToJSON())
+			if err != nil {
+				log.Printf("signor: failed to marshal ICE candidate: %s", err)
+				return
+			}
 		}
 
 		if err := negotiation.Send(&pb.NegotiateRequest{
 			Which: &pb.NegotiateRequest_IceCandidate{
 				IceCandidate: &pb.NegotiateRequest_ICECandidate{
-					IceCandidate: string(iceCandidateStr),
+					IceCandidate: string(marshaledICECandidate),
 				},
 			},
 		}); err != nil {
-			log.Printf("failed to send ice candidate: %s", err)
+			log.Printf("signor: failed to send ICE candidate: %s", err)
+		}
+
+		if iceCandidate == nil {
+			log.Printf("signor: all ICE candidates sent to peer")
+			close(allCandidatesSent)
+		} else {
+			log.Printf("signor: sent ICE candidate to peer: %s", string(marshaledICECandidate))
 		}
 	})
 	return peerConn, side, nil
