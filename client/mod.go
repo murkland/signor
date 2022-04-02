@@ -2,7 +2,9 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/murkland/signor/pb"
 	"github.com/pion/webrtc/v3"
@@ -35,18 +37,12 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 		return nil, ConnectionSideUnknown, err
 	}
 
-	gatherComplete := webrtc.GatheringCompletePromise(peerConn)
 	offer, err := peerConn.CreateOffer(nil)
 	if err != nil {
 		return nil, ConnectionSideUnknown, err
 	}
 	if err = peerConn.SetLocalDescription(offer); err != nil {
 		return nil, ConnectionSideUnknown, err
-	}
-	select {
-	case <-ctx.Done():
-		return nil, ConnectionSideUnknown, ctx.Err()
-	case <-gatherComplete:
 	}
 
 	negotiation, err := c.rpcClient.Negotiate(ctx)
@@ -70,6 +66,8 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 		return nil, ConnectionSideUnknown, err
 	}
 
+	side := ConnectionSideUnknown
+
 	switch p := resp.Which.(type) {
 	case *pb.NegotiateResponse_Offer_:
 		// We are polite, we need to rollback.
@@ -83,18 +81,12 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 			return nil, ConnectionSideUnknown, err
 		}
 
-		gatherComplete := webrtc.GatheringCompletePromise(peerConn)
 		answer, err := peerConn.CreateAnswer(nil)
 		if err != nil {
 			return nil, ConnectionSideUnknown, err
 		}
 		if err := peerConn.SetLocalDescription(answer); err != nil {
 			return nil, ConnectionSideUnknown, err
-		}
-		select {
-		case <-ctx.Done():
-			return nil, ConnectionSideUnknown, ctx.Err()
-		case <-gatherComplete:
 		}
 
 		if err := negotiation.Send(&pb.NegotiateRequest{
@@ -106,14 +98,66 @@ func (c *Client) Connect(ctx context.Context, sessionID string, makePeerConn fun
 		}); err != nil {
 			return nil, ConnectionSideUnknown, err
 		}
-		return peerConn, ConnectionSideAnswerer, nil
+		side = ConnectionSideAnswerer
 	case *pb.NegotiateResponse_Answer_:
 		// We are impolite, keep trucking.
 		if err := peerConn.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: p.Answer.Sdp}); err != nil {
 			return nil, ConnectionSideUnknown, err
 		}
-		return peerConn, ConnectionSideOfferer, nil
+		side = ConnectionSideOfferer
 	default:
 		return nil, ConnectionSideUnknown, fmt.Errorf("unexpected packet: %v", p)
 	}
+
+	go func() {
+		for {
+			resp, err := negotiation.Recv()
+			if err != nil {
+				log.Printf("error received during negotiation: %s", err)
+				break
+			}
+
+			iceCandidateResp, ok := resp.Which.(*pb.NegotiateResponse_IceCandidate)
+			if !ok {
+				log.Printf("received unexpected response from server: %s", resp)
+				continue
+			}
+
+			var iceCandidateInit webrtc.ICECandidateInit
+			if err := json.Unmarshal([]byte(iceCandidateResp.IceCandidate.IceCandidate), &iceCandidateInit); err != nil {
+				log.Printf("failed to unmarshal ice candidate: %s", err)
+				continue
+			}
+
+			if err := peerConn.AddICECandidate(iceCandidateInit); err != nil {
+				log.Printf("failed to add ice candidate: %s", err)
+				continue
+			}
+		}
+	}()
+
+	peerConn.OnConnectionStateChange(func(pcs webrtc.PeerConnectionState) {
+		if pcs == webrtc.PeerConnectionStateClosed {
+			negotiation.CloseSend()
+		}
+	})
+
+	peerConn.OnICECandidate(func(iceCandidate *webrtc.ICECandidate) {
+		iceCandidateStr, err := json.Marshal(iceCandidate.ToJSON())
+		if err != nil {
+			log.Printf("failed to marshal ice candidate: %s", err)
+			return
+		}
+
+		if err := negotiation.Send(&pb.NegotiateRequest{
+			Which: &pb.NegotiateRequest_IceCandidate{
+				IceCandidate: &pb.NegotiateRequest_ICECandidate{
+					IceCandidate: string(iceCandidateStr),
+				},
+			},
+		}); err != nil {
+			log.Printf("failed to send ice candidate: %s", err)
+		}
+	})
+	return peerConn, side, nil
 }

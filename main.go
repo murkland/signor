@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"sync"
-	"sync/atomic"
 	"syscall"
 
 	"github.com/murkland/signor/pb"
@@ -22,10 +21,13 @@ var (
 )
 
 type session struct {
-	id            string
-	refcount      int32
-	offerSDP      string
-	answerSDPChan chan string
+	refcount   int
+	refcountMu sync.Mutex
+
+	id               string
+	offerSDP         string
+	answerSDPChan    chan string
+	iceCandidateChan chan string
 }
 
 type server struct {
@@ -45,7 +47,12 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 
 		s.sessionsMu.Lock()
 		defer s.sessionsMu.Unlock()
-		if atomic.AddInt32(&sess.refcount, -1) <= 0 {
+
+		sess.refcountMu.Lock()
+		sess.refcount--
+		sess.refcountMu.Unlock()
+
+		if sess.refcount <= 0 {
 			delete(s.sessions, sess.id)
 		}
 	}()
@@ -65,11 +72,44 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 				defer s.sessionsMu.Unlock()
 				sess = s.sessions[p.Start.SessionId]
 				if sess == nil {
-					sess = &session{id: p.Start.SessionId, refcount: 0, answerSDPChan: make(chan string)}
+					iceCandidateChan := make(chan string)
+					go func() {
+						for {
+							select {
+							case <-stream.Context().Done():
+								break
+							case iceCandidate := <-iceCandidateChan:
+								stream.Send(&pb.NegotiateResponse{
+									Which: &pb.NegotiateResponse_IceCandidate{
+										IceCandidate: &pb.NegotiateResponse_ICECandidate{
+											IceCandidate: iceCandidate,
+										},
+									},
+								})
+							}
+						}
+					}()
+					sess = &session{
+						id:               p.Start.SessionId,
+						refcount:         0,
+						answerSDPChan:    make(chan string),
+						iceCandidateChan: iceCandidateChan,
+					}
 					s.sessions[sess.id] = sess
 				}
 			}()
-			atomic.AddInt32(&sess.refcount, 1)
+
+			if err := func() error {
+				sess.refcountMu.Lock()
+				defer sess.refcountMu.Unlock()
+				if sess.refcount >= 2 {
+					return grpc.Errorf(codes.FailedPrecondition, "too many clients on this session")
+				}
+				sess.refcount++
+				return nil
+			}(); err != nil {
+				return err
+			}
 
 			if sess.offerSDP != "" {
 				stream.Send(&pb.NegotiateResponse{
@@ -104,7 +144,15 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 			case <-stream.Context().Done():
 				return stream.Context().Err()
 			}
-			return nil
+		case *pb.NegotiateRequest_IceCandidate:
+			if sess == nil {
+				return grpc.Errorf(codes.FailedPrecondition, "did not receive start packet")
+			}
+			select {
+			case sess.iceCandidateChan <- p.IceCandidate.IceCandidate:
+			case <-stream.Context().Done():
+				return stream.Context().Err()
+			}
 		}
 	}
 }
