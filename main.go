@@ -37,6 +37,8 @@ type server struct {
 }
 
 func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
+	log.Printf("got negotiation")
+
 	var sess *session
 	var me int
 
@@ -64,6 +66,7 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 			}
 			return err
 		}
+		log.Printf("%+v", in)
 
 		switch p := in.Which.(type) {
 		case *pb.NegotiateRequest_Start_:
@@ -126,6 +129,14 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 			}); err != nil {
 				return err
 			}
+
+			if err := sess.streams[1].Send(&pb.NegotiateResponse{
+				Which: &pb.NegotiateResponse_Answered_{
+					Answered: &pb.NegotiateResponse_Answered{},
+				},
+			}); err != nil {
+				return err
+			}
 		case *pb.NegotiateRequest_IceCandidate:
 			if sess == nil {
 				return grpc.Errorf(codes.FailedPrecondition, "did not receive start packet")
@@ -158,7 +169,7 @@ func main() {
 
 	lis, err := net.Listen("tcp", *listenAddr)
 	if err != nil {
-		log.Fatalf("net.Listen(): %s", err)
+		log.Panicf("net.Listen(): %s", err)
 	}
 	log.Printf("listening on %s", lis.Addr())
 
@@ -176,6 +187,6 @@ func main() {
 	pb.RegisterSessionServiceServer(grpcServer, s)
 
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Panicf("failed to serve: %v", err)
 	}
 }

@@ -22,10 +22,12 @@ message NegotiateResponse {
   message Offer { string sdp = 1; }
   message Answer { string sdp = 1; }
   message ICECandidate { string ice_candidate = 1; }
+  message Answered {}
   oneof which {
     Offer offer = 1;
     Answer answer = 2;
     ICECandidate ice_candidate = 3;
+    Answered answered = 4;
   }
 }
 
