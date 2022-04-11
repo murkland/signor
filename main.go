@@ -6,12 +6,16 @@ import (
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"syscall"
 
 	"github.com/murkland/signor/pb"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -186,7 +190,17 @@ func main() {
 	grpcServer := grpc.NewServer()
 	pb.RegisterSessionServiceServer(grpcServer, s)
 
-	if err := grpcServer.Serve(lis); err != nil {
+	server := &http.Server{
+		Handler: h2c.NewHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
+				grpcServer.ServeHTTP(w, r)
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		}), &http2.Server{}),
+	}
+
+	if err := server.Serve(lis); err != nil {
 		log.Panicf("failed to serve: %v", err)
 	}
 }
