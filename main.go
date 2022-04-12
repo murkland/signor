@@ -41,8 +41,6 @@ type server struct {
 }
 
 func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
-	log.Printf("got negotiation")
-
 	var sess *session
 	var me int
 
@@ -129,14 +127,6 @@ func (s *server) Negotiate(stream pb.SessionService_NegotiateServer) error {
 					Answer: &pb.NegotiateResponse_Answer{
 						Sdp: p.Answer.Sdp,
 					},
-				},
-			}); err != nil {
-				return err
-			}
-
-			if err := sess.streams[1].Send(&pb.NegotiateResponse{
-				Which: &pb.NegotiateResponse_Answered_{
-					Answered: &pb.NegotiateResponse_Answered{},
 				},
 			}); err != nil {
 				return err
